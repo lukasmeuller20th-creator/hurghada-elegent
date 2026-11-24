@@ -1,10 +1,10 @@
 import { loadTrips, inLang, esc, SITE, LANGS } from "./_lib.js";
 const UI = {
-  en: { book: "Check availability & book", from: "from", pp: "per person", hl: "Highlights", it: "Itinerary", inc: "Included", exc: "Not included", more: "More trips", dur: "Duration", pick: "Free hotel pickup · Pay 20% now · Free cancellation up to 24 h" },
-  de: { book: "Verfügbarkeit prüfen & buchen", from: "ab", pp: "pro Person", hl: "Highlights", it: "Ablauf", inc: "Inklusive", exc: "Nicht inklusive", more: "Weitere Ausflüge", dur: "Dauer", pick: "Kostenlose Hotelabholung · 20 % anzahlen · kostenlos stornieren bis 24 Std. vorher" },
-  fr: { book: "Voir les disponibilités et réserver", from: "dès", pp: "par personne", hl: "Points forts", it: "Programme", inc: "Inclus", exc: "Non inclus", more: "Autres excursions", dur: "Durée", pick: "Prise en charge à l'hôtel · 20 % à la réservation · annulation gratuite jusqu'à 24 h" },
-  ru: { book: "Проверить даты и забронировать", from: "от", pp: "с человека", hl: "Главное", it: "Программа", inc: "Включено", exc: "Не включено", more: "Другие экскурсии", dur: "Длительность", pick: "Бесплатный трансфер из отеля · предоплата 20 % · бесплатная отмена за 24 ч" },
-  ar: { book: "شوف المواعيد واحجز", from: "من", pp: "للفرد", hl: "أهم المميزات", it: "البرنامج", inc: "يشمل", exc: "لا يشمل", more: "رحلات تانية", dur: "المدة", pick: "بيك أب مجاني من الفندق · ادفع 20% بس · إلغاء مجاني لحد 24 ساعة" }
+  en: { req: "Price on request", book: "Check availability & book", from: "from", pp: "per person", hl: "Highlights", it: "Itinerary", inc: "Included", exc: "Not included", more: "More trips", dur: "Duration", pick: "Free hotel pickup · Pay 20% now · Free cancellation up to 24 h" },
+  de: { req: "Preis auf Anfrage", book: "Verfügbarkeit prüfen & buchen", from: "ab", pp: "pro Person", hl: "Highlights", it: "Ablauf", inc: "Inklusive", exc: "Nicht inklusive", more: "Weitere Ausflüge", dur: "Dauer", pick: "Kostenlose Hotelabholung · 20 % anzahlen · kostenlos stornieren bis 24 Std. vorher" },
+  fr: { req: "Prix sur demande", book: "Voir les disponibilités et réserver", from: "dès", pp: "par personne", hl: "Points forts", it: "Programme", inc: "Inclus", exc: "Non inclus", more: "Autres excursions", dur: "Durée", pick: "Prise en charge à l'hôtel · 20 % à la réservation · annulation gratuite jusqu'à 24 h" },
+  ru: { req: "Цена по запросу", book: "Проверить даты и забронировать", from: "от", pp: "с человека", hl: "Главное", it: "Программа", inc: "Включено", exc: "Не включено", more: "Другие экскурсии", dur: "Длительность", pick: "Бесплатный трансфер из отеля · предоплата 20 % · бесплатная отмена за 24 ч" },
+  ar: { req: "السعر عند الطلب", book: "شوف المواعيد واحجز", from: "من", pp: "للفرد", hl: "أهم المميزات", it: "البرنامج", inc: "يشمل", exc: "لا يشمل", more: "رحلات تانية", dur: "المدة", pick: "بيك أب مجاني من الفندق · ادفع 20% بس · إلغاء مجاني لحد 24 ساعة" }
 };
 export default async function handler(req, res) {
   const id = String(req.query.id || ""), L = LANGS.includes(req.query.lang) ? req.query.lang : "en", U = UI[L];
@@ -13,9 +13,9 @@ export default async function handler(req, res) {
   const X = inLang(t, L), url = `${SITE}${L === "en" ? "" : "/" + L}/t/${t.id}`, img = t.photos[0] || `${SITE}/og.png`;
   const ld = { "@context": "https://schema.org", "@type": "TouristTrip", name: X.name, description: X.short, url, image: t.photos.length ? t.photos : undefined, touristType: t.cat,
     provider: { "@type": "TravelAgency", name: "Hurghada Elegant", telephone: "+201515989383", url: SITE, sameAs: ["https://www.instagram.com/hurghadaelegant","https://vm.tiktok.com/ZS9PuQW5BQeEP-inCBG/","https://www.facebook.com/share/19oUkpQUsN/","https://www.snapchat.com/add/hurghadaelegant"], address: { "@type": "PostalAddress", addressLocality: "Hurghada", addressCountry: "EG" } },
-    offers: { "@type": "Offer", price: t.price, priceCurrency: "EUR", availability: "https://schema.org/InStock", url } };
+    offers: t.request ? undefined : { "@type": "Offer", price: t.price, priceCurrency: "EUR", availability: "https://schema.org/InStock", url } };
   const alt = LANGS.map(l => `<link rel="alternate" hreflang="${l}" href="${SITE}${l === "en" ? "" : "/" + l}/t/${t.id}">`).join("") + `<link rel="alternate" hreflang="x-default" href="${SITE}/t/${t.id}">`;
-  const others = trips.filter(x => x.id !== t.id).slice(0, 6).map(x => `<a class="o" href="${L === "en" ? "" : "/" + L}/t/${x.id}">${esc(inLang(x, L).name)} · ${U.from} €${x.price}</a>`).join("");
+  const others = trips.filter(x => x.id !== t.id).slice(0, 6).map(x => `<a class="o" href="${L === "en" ? "" : "/" + L}/t/${x.id}">${esc(inLang(x, L).name)} · ${x.request ? "" : U.from + " €" + x.price}</a>`).join("");
   const html = `<!DOCTYPE html><html lang="${L}" dir="${L === "ar" ? "rtl" : "ltr"}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(X.name)} | Hurghada Elegant</title><meta name="description" content="${esc(X.short || X.name)} — ${esc(U.pick)}">
 <link rel="canonical" href="${url}">${alt}
@@ -30,7 +30,7 @@ ${t.inc.length ? `<div class="c"><h2>${U.inc}</h2><ul>${t.inc.map(h => `<li>${es
 <div class="c"><h2>${U.more}</h2>${others}</div>
 <div class="c"><a class="o" href="https://www.instagram.com/hurghadaelegant">Instagram @hurghadaelegant</a><a class="o" href="https://vm.tiktok.com/ZS9PuQW5BQeEP-inCBG/">TikTok</a><a class="o" href="https://www.facebook.com/share/19oUkpQUsN/">Facebook</a><a class="o" href="https://www.snapchat.com/add/hurghadaelegant">Snapchat @hurghadaelegant</a><a class="o" href="https://wa.me/201515989383">WhatsApp +20 15 15989383</a></div>
 <div class="c lang">${LANGS.map(l => `<a href="${l === "en" ? "" : "/" + l}/t/${t.id}" hreflang="${l}">${l.toUpperCase()}</a>`).join("")}</div>
-</main><div class="cta"><div>${U.from} <b>€${t.price}</b> ${U.pp}</div><a class="btn" href="/?lang=${L}#trip-${t.id}">${U.book}</a></div></body></html>`;
+</main><div class="cta">${t.request ? `<div><b style="font-size:17px">${U.req}</b></div><a class="btn" style="background:#25d366" href="https://wa.me/201515989383?text=${encodeURIComponent("Hello Hurghada Elegant! I am interested in: " + t.t.en)}">WhatsApp</a>` : `<div>${U.from} <b>€${t.price}</b> ${U.pp}</div><a class="btn" href="/?lang=${L}#trip-${t.id}">${U.book}</a>`}</div></body></html>`;
   res.setHeader("Content-Type", "text/html; charset=utf-8");
   res.setHeader("Cache-Control", "public, s-maxage=600, stale-while-revalidate=86400");
   res.end(html);

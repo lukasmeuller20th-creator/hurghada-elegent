@@ -21,6 +21,8 @@ export async function loadTrips() {
     for (const k of ["hi", "inc", "exc", "it"]) if (Array.isArray(ct[k])) t[k] = ct[k];
     if (ct.dur) t.dur = ct.dur; if (ct.cat) t.cat = ct.cat;
     if (c.price) t.price = c.price;
+    if ("request" in ct) t.request = !!ct.request;
+    t.request = !!t.request || !(t.price > 0);
     t.active = c.active !== false;
     t.photos = (c.photos || []).filter(p => /^https:\/\//.test(p));
     t.tr = c.tr || {};
@@ -28,7 +30,7 @@ export async function loadTrips() {
   }).filter(t => t.active && t.t.en);
 }
 export function inLang(t, L) {
-  const X = (t.tr && t.tr[L]) || {};
+  const X = (t.tr && t.tr[L]) || (t.trB && t.trB[L]) || {};
   return {
     name: (t.t && t.t[L]) || X.t || t.t.en,
     short: X.s || (t.s && t.s[L]) || t.s.en || "",
