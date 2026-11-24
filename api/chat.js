@@ -1,7 +1,15 @@
 // Vercel serverless function: trip assistant. Keys live in Vercel env vars, never in the page.
 // Set ONE of: GEMINI_API_KEY (free tier at aistudio.google.com) or ANTHROPIC_API_KEY.
+const HITS = new Map(); // best-effort per-instance rate limit
+const ALLOWED = /^https:\/\/(www\.)?hurghada-elegant\.com$|^https:\/\/[a-z0-9-]+\.vercel\.app$/;
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "POST only" });
+  const origin = req.headers.origin || "";
+  if (origin && !ALLOWED.test(origin)) return res.status(403).json({ error: "forbidden" });
+  const ip = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim() || "x";
+  const now = Date.now(), h = (HITS.get(ip) || []).filter(t => now - t < 60000);
+  if (h.length >= 15) return res.status(429).json({ error: "slow down" });
+  h.push(now); HITS.set(ip, h); if (HITS.size > 5000) HITS.clear();
   const { messages = [], catalogue = "", lang = "en" } = req.body || {};
   const msgs = messages.slice(-12).map(m => ({ role: m.role === "assistant" ? "assistant" : "user", content: String(m.content || "").slice(0, 1000) }));
   if (!msgs.length) return res.status(400).json({ error: "no message" });
