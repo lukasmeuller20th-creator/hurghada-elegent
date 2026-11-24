@@ -530,6 +530,7 @@ function vBiz(){const td=iso(today),since=iso(addDays(today,-30)),bs=live();cons
  <div class="widget"><span>${ic("qr")}${esc(ot("comm"))}</span><b>${money(com)}</b></div></div>
  <div style="padding:18px 16px 0"><div class="ilist">${rows.map(([k,i,col,v])=>`<a class="cell" href="#biz-${k}"><span class="ico" style="background:${col}">${ic(i)}</span><span class="grow">${esc(ot(k))}</span><span class="val">${esc(v)}</span>${ic("chev","chev")}</a>`).join("")}</div>
  <div class="ilabel">${esc(ot("top"))}</div><div class="ilist">${TRIPS.map(tr=>[tr,bs.filter(b=>b.tripId===tr.id).reduce((s,b)=>s+b.total,0)]).sort((a,b)=>b[1]-a[1]).slice(0,4).map(([tr,v])=>`<div class="cell"><div style="width:40px;height:40px;border-radius:9px;overflow:hidden;flex:none">${photo(tr).replace('class="ph"','class="ph" style="height:40px"')}</div><span class="grow" style="font-size:15px">${esc(tt(tr.t))}</span><span class="val">${money(v)}</span></div>`).join("")}</div>
+ <div class="ilist" style="margin-top:16px"><a class="cell" href="#biz-lock" style="color:var(--red)"><span class="ico" style="background:#8e8e93">${ic("x")}</span><span class="grow">${L==="ar"?"قفل لوحة الأونر":"Lock owner area"}</span></a></div>
  <p class="note" style="padding:0">${esc(ot("sample"))}</p></div></div>`,0,{tab:"biz"})}
 function vBizBookings(){const td=iso(today);let r=S.bookings.filter(b=>bizSeg==="today"?b.date===td:bizSeg==="up"?b.date>=td&&b.status!=="cancelled":true).sort((a,b)=>(a.date+a.pickup).localeCompare(b.date+b.pickup));if(bizSeg==="all")r=r.reverse();
  const grp={};r.forEach(b=>{(grp[b.date]=grp[b.date]||[]).push(b)});
@@ -750,10 +751,28 @@ async function connect(){try{const api=await claude.use("db");if(api){db=api;db.
  db.collection("tripcfg").onSnapshot(s=>{const o={};docsOf(s).forEach(c=>{if(c&&c.id)o[c.id]=c});S.cfg=o;rerender()},()=>{})}}catch(e){db=null}
  try{assets=await claude.use("assets")}catch(e){assets=null}}
 
+/* ---------- owner PIN ---------- */
+const BIZ_HASH="e9698290d11c36ab62eb918045646c6e3ceb87c8faebb2adfdf3421c83691472";
+function bizOk(){try{const v=JSON.parse(localStorage.getItem("heBiz")||"null");return v&&v.h===BIZ_HASH&&v.exp>Date.now()}catch(e){return false}}
+async function sha(t){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(t));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")}
+function vLock(dest){let pin="";const ar=L==="ar";
+ const dots=()=>[0,1,2,3].map(i=>`<i style="width:14px;height:14px;border-radius:7px;border:2px solid var(--tint);background:${i<pin.length?"var(--tint)":"transparent"}"></i>`).join("");
+ mount(`<div class="scroller" style="display:flex;flex-direction:column;align-items:center;padding:70px 24px 24px;text-align:center">
+ <div style="width:64px;height:64px;border-radius:18px;background:var(--tint);color:#fff;display:grid;place-items:center">${ic("brief").replace("<svg",'<svg style="width:30px;height:30px"')}</div>
+ <h1 style="font-size:24px;margin:16px 0 4px">${ar?"لوحة صاحب الشركة":"Business owner"}</h1><p class="cap" style="margin:0 0 24px">${ar?"اكتب الرقم السري":"Enter your PIN"}</p>
+ <div id="pdots" style="display:flex;gap:16px;margin-bottom:30px">${dots()}</div>
+ <div id="pkeys" style="display:grid;grid-template-columns:repeat(3,72px);gap:16px">${[1,2,3,4,5,6,7,8,9,"",0,"⌫"].map(k=>k===""?"<span></span>":`<button type="button" data-k="${k}" style="width:72px;height:72px;border-radius:36px;background:var(--card);font-size:28px;font-weight:500">${k}</button>`).join("")}</div>
+ <a href="#explore" class="cap" style="margin-top:28px;color:var(--tint)">${ar?"رجوع للموقع":"Back to site"}</a></div>`,0,{hideTabs:true,after:sc=>{
+  const fb=$("#fab");if(fb)setTimeout(()=>fb.style.display="none",50);const upd=()=>{$("#pdots").innerHTML=dots()};
+  const press=async k=>{if(k==="⌫"){pin=pin.slice(0,-1);upd();return}if(pin.length>=4)return;pin+=k;upd();if(pin.length===4){const h=await sha("HE|"+pin);if(h===BIZ_HASH){try{localStorage.setItem("heBiz",JSON.stringify({h,exp:Date.now()+30*864e5}))}catch(e){}route()}else{const d=$("#pdots");d.animate([{transform:"translateX(-10px)"},{transform:"translateX(10px)"},{transform:"translateX(0)"}],{duration:300});pin="";setTimeout(upd,300);toast(ar?"الرقم غلط":"Wrong PIN","x")}}};
+  $("#pkeys").onclick=e=>{const b=e.target.closest("[data-k]");if(b)press(b.dataset.k)};
+  const kd=e=>{if(!location.hash.startsWith("#biz")||bizOk()){document.removeEventListener("keydown",kd);return}if(/^[0-9]$/.test(e.key))press(e.key);if(e.key==="Backspace")press("⌫")};document.addEventListener("keydown",kd)}})}
 /* ---------- router ---------- */
 let curHash="";
 function route(quiet){const h=(location.hash||"#explore").slice(1);if(quiet&&h===curHash)lastDepth=99;curHash=h;
  if(h.startsWith("ref-")){REF=h.slice(4).toUpperCase();try{sessionStorage.setItem("ref",REF)}catch(e){}location.hash="explore";return}
+ if(h==="biz-lock"){try{localStorage.removeItem("heBiz")}catch(e){}location.hash="explore";return}
+ if(h.startsWith("biz")&&!bizOk()){vLock(h);return}
  const keepDepth=quiet?lastDepth:null;
  if(h.startsWith("trip-"))vTrip(h.slice(5));else if(h.startsWith("pass-"))vPass(h.slice(5));else if(h==="checkout")vCheckout();else if(h==="search")vSearch();else if(h==="saved")vSaved();else if(h==="trips")vTrips();else if(h==="biz")vBiz();else if(h==="biz-bk")vBizBookings();else if(h==="biz-dp")vBizDispatch();else if(h==="biz-trips2")vBizTrips();else if(h==="biz-sl")vBizSellers();else if(h==="biz-rv")vBizReviews();else if(h==="biz-cu")vBizCustomers();else if(h==="account")vAccount();else if(h==="biz-wa")vBizWA();else if(h==="biz-scan")vBizScan();else if(h==="biz-fleet")vBizFleet();else if(h==="biz-profit")vBizProfit();else if(h==="biz-price")vBizPrice();else if(h==="biz-import")vBizImport();else if(h==="biz-wait")vBizWait();else if(h.startsWith("agent-"))vAgent(h.slice(6).toUpperCase());else vExplore();
  if(quiet){$("#screen").className=""}}
