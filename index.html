@@ -250,7 +250,7 @@ details.faq p{margin:8px 0 0;color:var(--sec);font-size:15px}
 <script>
 {
 /* ---------- data (sample content for the demo) ---------- */
-const APP_URL="https://claude.ai/artifact/JzuJ5uo5sp9zSyEswp2SE5";
+const APP_URL=(SBMODE_URL=>SBMODE_URL)(typeof claude==="undefined"?"https://www.hurghada-elegant.com":"https://claude.ai/artifact/JzuJ5uo5sp9zSyEswp2SE5");
 const RATES={EUR:1,USD:1.08,GBP:.85,EGP:58};
 const SYM={EUR:"€",USD:"$",GBP:"£",EGP:"EGP "};
 const ZONES=[{id:"dahar",n:"Hurghada – El Dahar / Sakkala",off:0},{id:"village",n:"Hurghada – Village Road",off:15},{id:"sahl",n:"Sahl Hasheesh",off:-30},{id:"makadi",n:"Makadi Bay",off:-45},{id:"gouna",n:"El Gouna",off:-45},{id:"soma",n:"Soma Bay / Safaga",off:-75}];
