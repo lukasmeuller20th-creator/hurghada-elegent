@@ -746,14 +746,14 @@ let rT=null;const rerender=()=>{clearTimeout(rT);rT=setTimeout(()=>{if(!document
 
 /* ---------- Supabase (live site) ---------- */
 const SB_URL="https://menutaudynvwvvebsfkk.supabase.co",SB_KEY="sb_publishable_9AOh9WJsEVEAN1GEtE6knA_KL9Vy9cq";
-const SBMODE=typeof claude==="undefined";let sb=null,sbAdmin=false,sbReady=false,sbSubs={},sbChan=null;
+const SBMODE=typeof claude==="undefined";let sbErr="",sb=null,sbAdmin=false,sbReady=false,sbSubs={},sbChan=null;
 const blobUrl=id=>/^https?:/.test(String(id))?String(id):"/_blob/"+encodeURIComponent(id);
 function loadSB(){return window.supabase?Promise.resolve():new Promise((ok,no)=>{const sc=document.createElement("script");sc.src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";sc.onload=ok;sc.onerror=no;document.head.appendChild(sc)})}
 function sbDb(){return{collection(col){return{onSnapshot(ok,err){const load=async()=>{const {data,error}=await sb.from("docs").select("data").eq("col",col);if(error){err&&err(error);return}ok(data.map(r=>r.data))};sbSubs[col]=load;load()}}},
  doc(path){const i=path.indexOf("/"),col=path.slice(0,i),id=path.slice(i+1);return{async set(o){const r=sbAdmin?await sb.from("docs").upsert({col,id,data:o,updated_at:new Date().toISOString()}):await sb.rpc("guest_put",{p_col:col,p_id:id,p_data:o});if(r.error)throw r.error},
   async get(){const {data}=await sb.from("docs").select("data").eq("col",col).eq("id",id).maybeSingle();return data?data.data:null}}}}}
 async function connectSB(){try{await loadSB();if(!sb)sb=window.supabase.createClient(SB_URL,SB_KEY);const {data:{session}}=await sb.auth.getSession();sbAdmin=false;
- if(session){const {data}=await sb.from("admins").select("email").limit(1);sbAdmin=!!(data&&data.length)}
+ if(session){const r=await sb.rpc("is_admin");if(r.error){sbErr=r.error.message;console.warn(r.error)}sbAdmin=r.data===true;if(!sbAdmin&&!r.error){const r2=await sb.from("admins").select("email").limit(1);if(r2.error)sbErr=r2.error.message;sbAdmin=!!(r2.data&&r2.data.length)}}
  db=sbDb();sbSubs={};const pub=["tripcfg","settings","campaigns","gallery"];
  const setCfg=k=>s=>{const o={};docsOf(s).forEach(c=>{if(c&&c.id)o[c.id]=c});S[k]=o;if(k==="settings")syncDrivers();rerender()};
  db.collection("tripcfg").onSnapshot(setCfg("cfg"));db.collection("settings").onSnapshot(setCfg("settings"));
@@ -786,7 +786,7 @@ function vLogin(){const ar=L==="ar";mount(`<div class="scroller" style="display:
  <form id="lgf" class="ilist" style="width:100%;max-width:360px;text-align:start"><label class="cell"><input id="lge" type="email" autocomplete="username" placeholder="Email" style="text-align:start" required></label><label class="cell"><input id="lgp" type="password" autocomplete="current-password" placeholder="${ar?"كلمة السر":"Password"}" style="text-align:start" required></label></form>
  <button class="btn full" type="submit" form="lgf" id="lgb" style="max-width:360px">${ar?"دخول":"Sign in"}</button>
  <a href="#explore" class="cap" style="margin-top:28px;color:var(--tint)">${ar?"رجوع للموقع":"Back to site"}</a></div>`,0,{hideTabs:true,after:()=>{const fb=$("#fab");if(fb)setTimeout(()=>fb.style.display="none",50);
-  $("#lgf").onsubmit=async e=>{e.preventDefault();const b=$("#lgb");b.disabled=true;b.textContent="…";try{if(!sb){await loadSB();sb=window.supabase.createClient(SB_URL,SB_KEY)}const {error}=await sb.auth.signInWithPassword({email:$("#lge").value.trim(),password:$("#lgp").value});if(error)throw error;await connectSB();if(!sbAdmin){await sb.auth.signOut();toast(ar?"الإيميل ده مش أونر":"Not an owner account","x")}else route()}catch(err){toast(ar?"الإيميل أو كلمة السر غلط":"Wrong email or password","x")}b.disabled=false;b.textContent=ar?"دخول":"Sign in"}}})}
+  $("#lgf").onsubmit=async e=>{e.preventDefault();const b=$("#lgb");b.disabled=true;b.textContent="…";try{if(!sb){await loadSB();sb=window.supabase.createClient(SB_URL,SB_KEY)}const {error}=await sb.auth.signInWithPassword({email:$("#lge").value.trim(),password:$("#lgp").value});if(error)throw error;await connectSB();if(!sbAdmin){await sb.auth.signOut();const em=(await sb.auth.getUser()).data.user?.email||"";toast((ar?"مش أونر: ":"Not owner: ")+em+(sbErr?" · "+sbErr:""),"x")}else route()}catch(err){toast(ar?"الإيميل أو كلمة السر غلط":"Wrong email or password","x")}b.disabled=false;b.textContent=ar?"دخول":"Sign in"}}})}
 function vLockPin(dest){let pin="";const ar=L==="ar";
  const dots=()=>[0,1,2,3].map(i=>`<i style="width:14px;height:14px;border-radius:7px;border:2px solid var(--tint);background:${i<pin.length?"var(--tint)":"transparent"}"></i>`).join("");
  mount(`<div class="scroller" style="display:flex;flex-direction:column;align-items:center;padding:70px 24px 24px;text-align:center">
