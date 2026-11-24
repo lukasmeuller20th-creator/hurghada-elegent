@@ -25,9 +25,23 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://menutaudynvwvvebsfkk.supabase.co; connect-src 'self' https://menutaudynvwvvebsfkk.supabase.co wss://menutaudynvwvvebsfkk.supabase.co https://translate.googleapis.com https://api.mymemory.translated.net; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://connect.facebook.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://menutaudynvwvvebsfkk.supabase.co https://www.facebook.com https://*.google-analytics.com https://www.googletagmanager.com; connect-src 'self' https://menutaudynvwvvebsfkk.supabase.co wss://menutaudynvwvvebsfkk.supabase.co https://translate.googleapis.com https://api.mymemory.translated.net https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com https://www.facebook.com https://connect.facebook.net; frame-src https://www.facebook.com https://www.googletagmanager.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
         }
       ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/t/:id",
+      "destination": "/api/trip?id=:id"
+    },
+    {
+      "source": "/:lang(de|fr|ru|ar)/t/:id",
+      "destination": "/api/trip?id=:id&lang=:lang"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "/api/sitemap"
     }
   ]
 }
