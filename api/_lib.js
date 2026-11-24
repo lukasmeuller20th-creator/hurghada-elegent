@@ -25,6 +25,7 @@ export async function loadTrips() {
     t.request = !!t.request || !(t.price > 0);
     t.active = c.active !== false;
     t.photos = (c.photos || []).filter(p => /^https:\/\//.test(p));
+    if (!t.photos.length && t.img) t.photos = t.img.map(p => SITE + p);
     t.tr = c.tr || {};
     return t;
   }).filter(t => t.active && t.t.en);
