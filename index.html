@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<meta name="color-scheme" content="light dark">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0a6c7a">
@@ -195,7 +196,7 @@ details.faq p{margin:8px 0 0;color:var(--sec);font-size:15px}
 .pass .v{font-size:17px;font-weight:600}
 .pass .g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .pass .qrw{background:#fff;border-radius:14px;padding:12px;width:176px;margin:4px auto 2px}
-.pass .qrw svg{width:100%;height:auto;display:block}
+.pass .qrw svg{width:100%;height:auto;display:block;forced-color-adjust:none}.qrw svg path,.qrw svg rect[fill="black"],.qrw svg [fill="black"]{fill:#000!important}.qrw svg rect[fill="white"]{fill:#fff!important}
 .pass .notch{display:flex;justify-content:space-between;margin:0 -10px}
 .pass .notch i{width:20px;height:20px;border-radius:50%;background:var(--bg)}
 .pass .perf{border-top:2px dashed rgba(255,255,255,.35);margin:0 8px}
@@ -796,8 +797,10 @@ async function connectSB(){try{await loadSB();if(!sb)sb=window.supabase.createCl
   assets={upload:async f=>{const p=Date.now()+"_"+String(f.name||"photo.jpg").replace(/[^\w.]/g,"");const {error}=await sb.storage.from("photos").upload(p,f,{contentType:f.type});if(error)throw error;return{id:sb.storage.from("photos").getPublicUrl(p).data.publicUrl}}};
   if(sbChan)sb.removeChannel(sbChan);sbChan=sb.channel("docs").on("postgres_changes",{event:"*",schema:"public",table:"docs"},p=>{const c=(p.new&&p.new.col)||(p.old&&p.old.col);if(c==="tripcfg"||c==="settings"){sbSubs[c]&&sbSubs[c]()}else if(sbSubs[c])sbSubs[c]()}).subscribe()}
  else assets=null;
- const lb=ls.get("mine")||[];if(!sbAdmin&&lb.length){for(const id of lb){if(!S.bookings.some(b=>b.id===id)){try{const {data}=await sb.rpc("get_booking",{p_id:id});if(data){S.bookings.push(data)}}catch(e){}}}}
+ if(!sbAdmin)await refreshMine();
 }catch(e){db=null;console.warn("supabase",e)}sbReady=true;rerender()}
+async function refreshMine(){if(!sb||sbAdmin)return;const ids=ls.get("mine")||[];let ch=false;for(const id of ids){try{const {data}=await sb.rpc("get_booking",{p_id:id});if(data&&data.id){const i=S.bookings.findIndex(b=>b.id===data.id);const cur=i>=0?JSON.stringify(S.bookings[i]):"";if(JSON.stringify(data)!==cur){if(i>=0)S.bookings[i]=data;else S.bookings.push(data);ch=true}}}catch(e){}}if(ch){persistLocal();rerender()}}
+setInterval(()=>{if(document.visibilityState==="visible")refreshMine()},20000);document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")refreshMine()});
 async function sbFindBooking(id){if(!sb)return null;try{const {data}=await sb.rpc("get_booking",{p_id:String(id).toUpperCase()});return data||null}catch(e){return null}}
 async function sbGift(code){if(!sb)return null;try{const {data}=await sb.rpc("get_gift",{p_code:String(code).toUpperCase()});return data||null}catch(e){return null}}
 async function connect(){if(SBMODE){await connectSB();return}try{const api=await claude.use("db");if(api){db=api;db.collection("bookings").onSnapshot(s=>{S.bookings=docsOf(s);mode="db";rerender()},()=>{});db.collection("sellers").onSnapshot(s=>{S.sellers=docsOf(s);rerender()},()=>{});try{userApi=await claude.use("user");uid=userApi?await userApi.id():null}catch(e){}
@@ -849,7 +852,7 @@ function route(quiet){applyContent();const h=(location.hash||"#explore").slice(1
  if(h==="biz-lock"){try{localStorage.removeItem("heBiz")}catch(e){}if(SBMODE&&sb){sb.auth.signOut().then(()=>{location.hash="explore";location.reload()});return}location.hash="explore";return}
  if(h.startsWith("biz")&&!bizOk()){vLock(h);return}
  const keepDepth=quiet?lastDepth:null;
- if(h.startsWith("trip-"))vTrip(h.slice(5));else if(h.startsWith("pass-"))vPass(h.slice(5));else if(h==="checkout")vCheckout();else if(h==="search")vSearch();else if(h==="saved")vSaved();else if(h==="trips")vTrips();else if(h==="biz")vBiz();else if(h==="biz-bk")vBizBookings();else if(h==="biz-dp")vBizDispatch();else if(h==="biz-trips2")vBizTrips();else if(h==="biz-sl")vBizSellers();else if(h==="biz-rv")vBizReviews();else if(h==="biz-cu")vBizCustomers();else if(h==="account")vAccount();else if(h==="biz-wa")vBizWA();else if(h==="biz-scan")vBizScan();else if(h==="biz-fleet")vBizFleet();else if(h==="biz-profit")vBizProfit();else if(h==="biz-price")vBizPrice();else if(h==="biz-import")vBizImport();else if(h==="biz-wait")vBizWait();else if(h.startsWith("agent-"))vAgent(h.slice(6).toUpperCase());else vExplore();
+ if(!quiet&&(h.startsWith("pass-")||h==="trips")&&typeof refreshMine==="function")refreshMine();if(h.startsWith("trip-"))vTrip(h.slice(5));else if(h.startsWith("pass-"))vPass(h.slice(5));else if(h==="checkout")vCheckout();else if(h==="search")vSearch();else if(h==="saved")vSaved();else if(h==="trips")vTrips();else if(h==="biz")vBiz();else if(h==="biz-bk")vBizBookings();else if(h==="biz-dp")vBizDispatch();else if(h==="biz-trips2")vBizTrips();else if(h==="biz-sl")vBizSellers();else if(h==="biz-rv")vBizReviews();else if(h==="biz-cu")vBizCustomers();else if(h==="account")vAccount();else if(h==="biz-wa")vBizWA();else if(h==="biz-scan")vBizScan();else if(h==="biz-fleet")vBizFleet();else if(h==="biz-profit")vBizProfit();else if(h==="biz-price")vBizPrice();else if(h==="biz-import")vBizImport();else if(h==="biz-wait")vBizWait();else if(h.startsWith("agent-"))vAgent(h.slice(6).toUpperCase());else vExplore();
  if(quiet){$("#screen").className=""}}
 function applyLang(){document.documentElement.lang=L;document.documentElement.dir=L==="ar"?"rtl":"ltr"}
 
