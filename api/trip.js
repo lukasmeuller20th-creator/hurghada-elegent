@@ -12,7 +12,7 @@ export default async function handler(req, res) {
   if (!t) { res.statusCode = 302; res.setHeader("Location", "/"); return res.end(); }
   const X = inLang(t, L), url = `${SITE}${L === "en" ? "" : "/" + L}/t/${t.id}`, img = t.photos[0] || `${SITE}/og.png`;
   const ld = { "@context": "https://schema.org", "@type": "TouristTrip", name: X.name, description: X.short, url, image: t.photos.length ? t.photos : undefined, touristType: t.cat,
-    provider: { "@type": "TravelAgency", name: "Hurghada Elegant", telephone: "+201515989383", url: SITE, address: { "@type": "PostalAddress", addressLocality: "Hurghada", addressCountry: "EG" } },
+    provider: { "@type": "TravelAgency", name: "Hurghada Elegant", telephone: "+201515989383", url: SITE, sameAs: ["https://www.instagram.com/hurghadaelegant","https://vm.tiktok.com/ZS9PuQW5BQeEP-inCBG/","https://www.facebook.com/share/19oUkpQUsN/","https://www.snapchat.com/add/hurghadaelegant"], address: { "@type": "PostalAddress", addressLocality: "Hurghada", addressCountry: "EG" } },
     offers: { "@type": "Offer", price: t.price, priceCurrency: "EUR", availability: "https://schema.org/InStock", url } };
   const alt = LANGS.map(l => `<link rel="alternate" hreflang="${l}" href="${SITE}${l === "en" ? "" : "/" + l}/t/${t.id}">`).join("") + `<link rel="alternate" hreflang="x-default" href="${SITE}/t/${t.id}">`;
   const others = trips.filter(x => x.id !== t.id).slice(0, 6).map(x => `<a class="o" href="${L === "en" ? "" : "/" + L}/t/${x.id}">${esc(inLang(x, L).name)} · ${U.from} €${x.price}</a>`).join("");
@@ -28,6 +28,7 @@ ${X.hi.length ? `<div class="c"><h2>${U.hl}</h2><ul>${X.hi.map(h => `<li>${esc(h
 ${X.it.length ? `<div class="c"><h2>${U.it}</h2><ul>${X.it.map(s => `<li><b>${esc(s[0])}</b> — ${esc(s[1])}</li>`).join("")}</ul></div>` : ""}
 ${t.inc.length ? `<div class="c"><h2>${U.inc}</h2><ul>${t.inc.map(h => `<li>${esc(h)}</li>`).join("")}</ul>${t.exc.length ? `<h2 style="margin-top:12px">${U.exc}</h2><ul>${t.exc.map(h => `<li>${esc(h)}</li>`).join("")}</ul>` : ""}</div>` : ""}
 <div class="c"><h2>${U.more}</h2>${others}</div>
+<div class="c"><a class="o" href="https://www.instagram.com/hurghadaelegant">Instagram @hurghadaelegant</a><a class="o" href="https://vm.tiktok.com/ZS9PuQW5BQeEP-inCBG/">TikTok</a><a class="o" href="https://www.facebook.com/share/19oUkpQUsN/">Facebook</a><a class="o" href="https://www.snapchat.com/add/hurghadaelegant">Snapchat @hurghadaelegant</a><a class="o" href="https://wa.me/201515989383">WhatsApp +20 15 15989383</a></div>
 <div class="c lang">${LANGS.map(l => `<a href="${l === "en" ? "" : "/" + l}/t/${t.id}" hreflang="${l}">${l.toUpperCase()}</a>`).join("")}</div>
 </main><div class="cta"><div>${U.from} <b>€${t.price}</b> ${U.pp}</div><a class="btn" href="/?lang=${L}#trip-${t.id}">${U.book}</a></div></body></html>`;
   res.setHeader("Content-Type", "text/html; charset=utf-8");
